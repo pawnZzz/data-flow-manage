@@ -1,8 +1,9 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 
 from app.config import get_settings
 from app.deps import CurrentUser, DbSession
 from app.exceptions import PermissionDenied
+from app.rate_limit import limiter
 from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
@@ -28,7 +29,8 @@ def register(payload: RegisterRequest, db: DbSession) -> UserResponse:
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
+@limiter.limit("5/minute")
+def login(request: Request, payload: LoginRequest, db: DbSession) -> TokenResponse:
     user = auth_service.authenticate(db, payload.username, payload.password)
     return TokenResponse(access_token=create_access_token(subject=str(user.id)))
 

@@ -62,3 +62,10 @@ def client(mysql_engine):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    from app.rate_limit import limiter
+    limiter.reset()
+    yield
