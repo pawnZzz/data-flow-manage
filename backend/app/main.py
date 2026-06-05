@@ -19,6 +19,10 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
 
+    from app.routers import auth as auth_router
+
+    app.include_router(auth_router.router)
+
     @app.get("/api/v1/health")
     def health() -> dict:
         return {"status": "ok"}
