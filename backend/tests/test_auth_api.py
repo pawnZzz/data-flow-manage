@@ -87,3 +87,13 @@ def test_change_password_then_login(client):
     assert r.status_code == 204
     r = client.post("/api/v1/auth/login", json={"username": "alice", "password": "brandnew"})
     assert r.status_code == 200
+
+
+def test_validation_error_uses_envelope(client):
+    # username too short triggers 422
+    r = client.post(
+        "/api/v1/auth/register",
+        json={"username": "ab", "email": "a@b.com", "password": "secret"},
+    )
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "VALIDATION_ERROR"

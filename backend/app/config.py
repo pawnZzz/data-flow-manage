@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     max_traversal_depth: int = 15
     allow_registration: bool = True
+    environment: str = "development"
 
     @property
     def cors_origin_list(self) -> list[str]:

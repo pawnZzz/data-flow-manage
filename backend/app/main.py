@@ -1,6 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
+from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.config import get_settings
@@ -10,10 +10,18 @@ from app.rate_limit import limiter
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    if settings.environment == "production" and settings.jwt_secret == "change-me-in-production":
+        raise RuntimeError("生产环境必须设置非默认的 JWT_SECRET（≥32 字节）")
     app = FastAPI(title="任务血缘管理工具", version="0.1.0")
 
+    async def _rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+        return JSONResponse(
+            status_code=429,
+            content={"error": {"code": "RATE_LIMITED", "message": "请求过于频繁，请稍后再试", "details": {}}},
+        )
+
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 
     app.add_middleware(
         CORSMiddleware,
