@@ -22,3 +22,9 @@ def test_jwt_roundtrip():
 
 def test_jwt_invalid_returns_none():
     assert decode_access_token("not-a-token") is None
+
+
+def test_password_over_72_bytes_roundtrip():
+    long_pw = "a" * 100
+    h = hash_password(long_pw)
+    assert verify_password(long_pw, h) is True

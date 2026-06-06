@@ -6,13 +6,19 @@ import jwt
 from app.config import get_settings
 
 
+def _pw_bytes(plain: str) -> bytes:
+    # bcrypt only considers the first 72 bytes; truncate explicitly so longer
+    # passwords hash/verify deterministically instead of raising ValueError.
+    return plain.encode("utf-8")[:72]
+
+
 def hash_password(plain: str) -> str:
-    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
+    return bcrypt.hashpw(_pw_bytes(plain), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     try:
-        return bcrypt.checkpw(plain.encode(), hashed.encode())
+        return bcrypt.checkpw(_pw_bytes(plain), hashed.encode())
     except ValueError:
         return False
 
