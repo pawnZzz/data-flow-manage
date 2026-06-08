@@ -1,13 +1,15 @@
 import pytest
 from sqlalchemy.orm import sessionmaker
 
-from app.models import User
+from app.models import Project, ProjectMember, User
 
 
 @pytest.fixture(autouse=True)
 def _clear_users(mysql_engine):
     Session = sessionmaker(bind=mysql_engine)
     s = Session()
+    s.query(ProjectMember).delete()
+    s.query(Project).delete()
     s.query(User).delete()
     s.commit()
     s.close()

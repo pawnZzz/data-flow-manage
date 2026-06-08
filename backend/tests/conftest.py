@@ -8,7 +8,8 @@ from testcontainers.mysql import MySqlContainer
 
 from app.db.mysql import Base, get_session
 from app.main import create_app
-from app.models import User  # noqa: F401  注册到 metadata
+from app.models import MemberRole, Project, ProjectMember, User  # noqa: F401  注册到 metadata
+from app.security import create_access_token, hash_password
 
 # Docker Desktop on macOS uses a non-default socket path
 _DOCKER_SOCK = os.path.expanduser("~/.docker/run/docker.sock")
@@ -37,7 +38,9 @@ def mysql_engine():
 def db_session(mysql_engine):
     TestingSession = sessionmaker(bind=mysql_engine, autoflush=False, expire_on_commit=False)
     session = TestingSession()
-    # 每个测试前清空 users，保证隔离
+    # 每个测试前按外键顺序清空，保证隔离
+    session.query(ProjectMember).delete()
+    session.query(Project).delete()
     session.query(User).delete()
     session.commit()
     try:
@@ -69,3 +72,50 @@ def _reset_rate_limiter():
     from app.rate_limit import limiter
     limiter.reset()
     yield
+
+
+@pytest.fixture
+def seed(mysql_engine):
+    """建用户/项目/成员的 helper，并在测试前清空相关表。"""
+    Session = sessionmaker(bind=mysql_engine, autoflush=False, expire_on_commit=False)
+    s = Session()
+    # 按外键顺序清空
+    s.query(ProjectMember).delete()
+    s.query(Project).delete()
+    s.query(User).delete()
+    s.commit()
+
+    class Seed:
+        def user(self, username, email=None, password="secret"):
+            u = User(
+                username=username,
+                email=email or f"{username}@x.com",
+                password_hash=hash_password(password),
+            )
+            s.add(u)
+            s.commit()
+            s.refresh(u)
+            return u
+
+        def project(self, owner, name="proj", status="active"):
+            from app.models import ProjectStatus
+
+            p = Project(name=name, created_by=owner.id, status=ProjectStatus(status))
+            s.add(p)
+            s.commit()
+            s.refresh(p)
+            s.add(ProjectMember(project_id=p.id, user_id=owner.id, role=MemberRole.owner))
+            s.commit()
+            return p
+
+        def member(self, project, user, role):
+            s.add(
+                ProjectMember(project_id=project.id, user_id=user.id, role=MemberRole(role))
+            )
+            s.commit()
+
+        def token(self, user):
+            return create_access_token(subject=str(user.id))
+
+    yield Seed()
+    s.close()
