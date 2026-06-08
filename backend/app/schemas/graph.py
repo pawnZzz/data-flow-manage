@@ -68,11 +68,12 @@ class NodeResponse(BaseModel):
     project_id: int
     name: str
     type: str
-    description: str | None
-    owner: str | None
-    department: str | None
-    system: str | None
-    priority: str | None
+    # Neo4j 不存储 null 属性，缺省键需有默认值才不会被当成必填
+    description: str | None = None
+    owner: str | None = None
+    department: str | None = None
+    system: str | None = None
+    priority: str | None = None
     tags: list[str]
     ext_props: dict[str, Any]
     is_critical: bool
@@ -80,7 +81,7 @@ class NodeResponse(BaseModel):
     updated_at: datetime
     created_by: int
     updated_by: int
-    parent_id: str | None
+    parent_id: str | None = None
     children_count: int
 
 
