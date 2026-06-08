@@ -105,3 +105,28 @@ def test_remove_member_ok(db_session, seed):
     )
     remaining = {m.user_id for m in member_service.list_members(db_session, p.id)}
     assert bob.id not in remaining
+
+
+def test_add_member_by_email(db_session, seed):
+    owner = seed.user("owner")
+    bob = seed.user("bob", email="bob@corp.com")
+    p = seed.project(owner)
+    m = member_service.add_member(
+        db_session, actor_role=MemberRole.owner, actor=owner,
+        project=p, username=None, email="bob@corp.com", role="viewer",
+    )
+    assert m.user_id == bob.id
+    assert m.role == MemberRole.viewer
+
+
+def test_add_member_invalid_role_raises(db_session, seed):
+    from app.exceptions import ValidationError
+
+    owner = seed.user("owner")
+    seed.user("bob")
+    p = seed.project(owner)
+    with pytest.raises(ValidationError):
+        member_service.add_member(
+            db_session, actor_role=MemberRole.owner, actor=owner,
+            project=p, username="bob", email=None, role="superadmin",
+        )

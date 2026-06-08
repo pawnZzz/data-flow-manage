@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.exceptions import ConflictError, NotFoundError, PermissionDenied
+from app.exceptions import ConflictError, NotFoundError, PermissionDenied, ValidationError
 from app.models import MemberRole, Project, ProjectMember, User
 
 logger = logging.getLogger("app.audit")
@@ -42,12 +42,15 @@ def add_member(
     email: str | None,
     role: str,
 ) -> ProjectMember:
-    new_role = MemberRole(role)
+    try:
+        new_role = MemberRole(role)
+    except ValueError:
+        raise ValidationError(f"无效角色: {role}")
     if new_role == MemberRole.owner and actor_role != MemberRole.owner:
         raise PermissionDenied("只有 owner 能添加 owner 角色")
 
     stmt = select(User)
-    if username:
+    if username is not None:
         stmt = stmt.where(User.username == username)
     else:
         stmt = stmt.where(User.email == email)
@@ -78,7 +81,10 @@ def change_role(
     target_user_id: int,
     new_role: str,
 ) -> ProjectMember:
-    role = MemberRole(new_role)
+    try:
+        role = MemberRole(new_role)
+    except ValueError:
+        raise ValidationError(f"无效角色: {new_role}")
     membership = _get_membership(db, project.id, target_user_id)
     if membership is None:
         raise NotFoundError("成员不存在")
@@ -98,6 +104,7 @@ def change_role(
     membership.role = role
     db.add(membership)
     db.commit()
+    db.refresh(membership)
     logger.info(
         "member.update_role actor=%s project=%s target_user=%s role=%s->%s",
         actor.id, project.id, target_user_id, old, role.value,
