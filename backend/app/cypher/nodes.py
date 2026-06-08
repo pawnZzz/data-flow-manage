@@ -50,3 +50,37 @@ ORDER BY n.name
 EXISTS = """
 MATCH (n:LineageNode {project_id: $pid, id: $nid}) RETURN n.id AS id
 """
+
+# 成环预检：parent 是否已是 nid 的后代（存在则设置会成环）
+PARENT_WOULD_CYCLE = """
+MATCH (parent:LineageNode {project_id: $pid, id: $parent_id})
+      -[:CHILD_OF*1..]->(target:LineageNode {project_id: $pid, id: $nid})
+RETURN count(*) > 0 AS would_cycle
+"""
+
+# 删旧父边 + 建新父边（单一父亲）
+CLEAR_PARENT = """
+MATCH (n:LineageNode {project_id: $pid, id: $nid})-[r:CHILD_OF]->()
+DELETE r
+"""
+
+SET_PARENT = """
+MATCH (n:LineageNode {project_id: $pid, id: $nid})
+MATCH (p:LineageNode {project_id: $pid, id: $parent_id})
+CREATE (n)-[:CHILD_OF]->(p)
+"""
+
+LIST_CHILDREN = """
+MATCH (parent:LineageNode {project_id: $pid, id: $nid})<-[:CHILD_OF]-(child:LineageNode)
+OPTIONAL MATCH (child)<-[:CHILD_OF]-(gc:LineageNode)
+RETURN child AS n, $nid AS parent_id, count(DISTINCT gc) AS children_count
+ORDER BY child.name
+"""
+
+LIST_DESCENDANTS = """
+MATCH (parent:LineageNode {project_id: $pid, id: $nid})<-[:CHILD_OF*1..]-(d:LineageNode)
+OPTIONAL MATCH (d)-[:CHILD_OF]->(dp:LineageNode)
+OPTIONAL MATCH (d)<-[:CHILD_OF]-(dc:LineageNode)
+RETURN DISTINCT d AS n, dp.id AS parent_id, count(DISTINCT dc) AS children_count
+ORDER BY d.name
+"""

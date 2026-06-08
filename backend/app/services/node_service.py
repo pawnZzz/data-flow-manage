@@ -104,3 +104,36 @@ def update_node(repo: GraphRepo, pid: int, nid: str, uid: int, patch: dict) -> d
 def delete_node(repo: GraphRepo, pid: int, nid: str) -> None:
     get_node(repo, pid, nid)  # 404 if missing
     repo.run_write(q.DELETE, pid=pid, nid=nid)
+
+
+def set_parent(repo: GraphRepo, pid: int, nid: str, parent_id: str) -> None:
+    if parent_id == nid:
+        raise ValidationError("节点不能将自己设为父节点", {"id": nid})
+    # 两节点都须存在于本项目
+    if not repo.run_read(q.EXISTS, pid=pid, nid=nid):
+        raise NotFoundError("节点不存在", {"id": nid})
+    if not repo.run_read(q.EXISTS, pid=pid, nid=parent_id):
+        raise NotFoundError("父节点不存在", {"id": parent_id})
+    cycle = repo.run_read(q.PARENT_WOULD_CYCLE, pid=pid, nid=nid, parent_id=parent_id)
+    if cycle and cycle[0]["would_cycle"]:
+        raise ValidationError("设置父节点会形成环", {"code": "PARENT_CYCLE"})
+    repo.run_write(q.CLEAR_PARENT, pid=pid, nid=nid)  # 单一父亲：先清旧
+    repo.run_write(q.SET_PARENT, pid=pid, nid=nid, parent_id=parent_id)
+
+
+def clear_parent(repo: GraphRepo, pid: int, nid: str) -> None:
+    if not repo.run_read(q.EXISTS, pid=pid, nid=nid):
+        raise NotFoundError("节点不存在", {"id": nid})
+    repo.run_write(q.CLEAR_PARENT, pid=pid, nid=nid)
+
+
+def list_children(repo: GraphRepo, pid: int, nid: str) -> list[dict]:
+    if not repo.run_read(q.EXISTS, pid=pid, nid=nid):
+        raise NotFoundError("节点不存在", {"id": nid})
+    return [_row_to_node(r) for r in repo.run_read(q.LIST_CHILDREN, pid=pid, nid=nid)]
+
+
+def list_descendants(repo: GraphRepo, pid: int, nid: str) -> list[dict]:
+    if not repo.run_read(q.EXISTS, pid=pid, nid=nid):
+        raise NotFoundError("节点不存在", {"id": nid})
+    return [_row_to_node(r) for r in repo.run_read(q.LIST_DESCENDANTS, pid=pid, nid=nid)]

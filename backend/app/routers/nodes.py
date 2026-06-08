@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.deps import GraphRepoDep, ProjectContext, require_role
 from app.models import MemberRole
-from app.schemas.graph import CreateNodeRequest, NodeResponse, UpdateNodeRequest
+from app.schemas.graph import (
+    CreateNodeRequest,
+    NodeResponse,
+    SetParentRequest,
+    UpdateNodeRequest,
+)
 from app.services import node_service
 
 router = APIRouter(prefix="/api/v1/projects/{pid}/nodes", tags=["nodes"])
@@ -68,3 +73,42 @@ def delete_node(
 ) -> None:
     node_service.delete_node(repo, ctx.project.id, nid)
     return None
+
+
+@router.post("/{nid}/parent", status_code=status.HTTP_204_NO_CONTENT)
+def set_parent(
+    nid: str,
+    payload: SetParentRequest,
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    repo: GraphRepoDep,
+) -> None:
+    node_service.set_parent(repo, ctx.project.id, nid, payload.parent_id)
+    return None
+
+
+@router.delete("/{nid}/parent", status_code=status.HTTP_204_NO_CONTENT)
+def clear_parent(
+    nid: str,
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    repo: GraphRepoDep,
+) -> None:
+    node_service.clear_parent(repo, ctx.project.id, nid)
+    return None
+
+
+@router.get("/{nid}/children", response_model=list[NodeResponse])
+def list_children(
+    nid: str,
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.viewer))],
+    repo: GraphRepoDep,
+) -> list[NodeResponse]:
+    return node_service.list_children(repo, ctx.project.id, nid)
+
+
+@router.get("/{nid}/descendants", response_model=list[NodeResponse])
+def list_descendants(
+    nid: str,
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.viewer))],
+    repo: GraphRepoDep,
+) -> list[NodeResponse]:
+    return node_service.list_descendants(repo, ctx.project.id, nid)
