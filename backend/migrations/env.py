@@ -5,7 +5,11 @@ from sqlalchemy import engine_from_config, pool
 
 from app.config import get_settings
 from app.db.mysql import Base
-from app.models import User  # noqa: F401  确保模型被导入注册到 metadata
+from app.models import (  # noqa: F401  确保模型被导入注册到 metadata
+    Project,
+    ProjectMember,
+    User,
+)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", get_settings().mysql_dsn)
