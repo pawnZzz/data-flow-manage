@@ -23,3 +23,14 @@ def test_add_member_with_username_ok():
     r = AddMemberRequest(username="bob", role="editor")
     assert r.username == "bob"
     assert r.role == "editor"
+
+
+def test_add_member_rejects_invalid_role():
+    with pytest.raises(ValidationError):
+        AddMemberRequest(username="bob", role="superadmin")
+
+
+def test_add_member_with_email_ok():
+    r = AddMemberRequest(email="bob@example.com", role="viewer")
+    assert r.email == "bob@example.com"
+    assert r.role == "viewer"

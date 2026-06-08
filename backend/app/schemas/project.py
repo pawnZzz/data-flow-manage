@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
+_ROLE_PATTERN = "^(owner|admin|editor|viewer)$"
+
 
 class CreateProjectRequest(BaseModel):
     name: str = Field(min_length=1, max_length=128)
@@ -25,9 +27,9 @@ class ProjectResponse(BaseModel):
 
 
 class AddMemberRequest(BaseModel):
-    username: str | None = None
+    username: str | None = Field(default=None, min_length=1)
     email: EmailStr | None = None
-    role: str = Field(pattern="^(owner|admin|editor|viewer)$")
+    role: str = Field(pattern=_ROLE_PATTERN)
 
     @model_validator(mode="after")
     def _need_identifier(self) -> "AddMemberRequest":
@@ -37,7 +39,7 @@ class AddMemberRequest(BaseModel):
 
 
 class ChangeRoleRequest(BaseModel):
-    role: str = Field(pattern="^(owner|admin|editor|viewer)$")
+    role: str = Field(pattern=_ROLE_PATTERN)
 
 
 class MemberResponse(BaseModel):
