@@ -5,6 +5,14 @@ def _auth(seed, user):
     return {"Authorization": f"Bearer {seed.token(user)}"}
 
 
+def _setup_caller(seed, project, owner, actor, role):
+    # owner 由 seed.project 自动成为 owner 成员；其它角色显式加成员
+    if role != "owner":
+        seed.member(project, actor, role)
+        return actor
+    return owner
+
+
 # (角色, 改项目 PATCH, 管成员 POST, 删项目 DELETE) 期望状态码
 # 改项目/管成员需 admin+；删项目需 owner
 MATRIX = [
@@ -15,19 +23,17 @@ MATRIX = [
 ]
 
 
-@pytest.mark.parametrize("role,patch_code,member_code,delete_code", MATRIX)
+@pytest.mark.parametrize(
+    "role,patch_code,member_code,delete_code", MATRIX, ids=[r[0] for r in MATRIX]
+)
 def test_write_endpoints_by_role(client, seed, role, patch_code, member_code, delete_code):
     owner = seed.user("owner_u")
     actor = seed.user("actor_u")
     seed.user("newbie")
     p = seed.project(owner)
-    if role != "owner":
-        seed.member(p, actor, role)
-        caller = actor
-    else:
-        caller = owner
+    caller = _setup_caller(seed, p, owner, actor, role)
 
-    # 改项目
+    # 改项目（PATCH 只改 name，不影响项目状态，后续断言独立有效）
     r = client.patch(
         f"/api/v1/projects/{p.id}", json={"name": "x"}, headers=_auth(seed, caller)
     )
@@ -46,16 +52,12 @@ def test_write_endpoints_by_role(client, seed, role, patch_code, member_code, de
     assert r.status_code == delete_code
 
 
-@pytest.mark.parametrize("role", ["owner", "admin", "editor", "viewer"])
+@pytest.mark.parametrize("role", [r[0] for r in MATRIX])
 def test_read_endpoints_allow_all_members(client, seed, role):
     owner = seed.user("owner_u")
     actor = seed.user("actor_u")
     p = seed.project(owner)
-    if role != "owner":
-        seed.member(p, actor, role)
-        caller = actor
-    else:
-        caller = owner
+    caller = _setup_caller(seed, p, owner, actor, role)
     r = client.get(f"/api/v1/projects/{p.id}", headers=_auth(seed, caller))
     assert r.status_code == 200
     r = client.get(f"/api/v1/projects/{p.id}/members", headers=_auth(seed, caller))
