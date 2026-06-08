@@ -2,13 +2,18 @@ import os
 
 import pytest
 from fastapi.testclient import TestClient
+from neo4j import GraphDatabase
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from testcontainers.mysql import MySqlContainer
+from testcontainers.neo4j import Neo4jContainer
 
 from app.db.mysql import Base, get_session
+from app.db.neo4j_constraints import init_constraints
+from app.deps import get_graph_repo
 from app.main import create_app
 from app.models import MemberRole, Project, ProjectMember, ProjectStatus, User  # noqa: F401  注册到 metadata
+from app.repositories.graph_repo import GraphRepo
 from app.security import create_access_token, hash_password
 
 # Docker Desktop on macOS uses a non-default socket path
@@ -34,6 +39,26 @@ def mysql_engine():
         engine.dispose()
 
 
+@pytest.fixture(scope="session")
+def neo4j_driver():
+    with Neo4jContainer("neo4j:5-community") as neo4j:
+        driver = GraphDatabase.driver(
+            neo4j.get_connection_url(),
+            auth=(neo4j.username, neo4j.password),
+        )
+        init_constraints(driver)
+        yield driver
+        driver.close()
+
+
+@pytest.fixture
+def graph(neo4j_driver):
+    # 每个测试前清空图数据，保证隔离
+    with neo4j_driver.session() as s:
+        s.run("MATCH (n) DETACH DELETE n")
+    return GraphRepo(neo4j_driver)
+
+
 @pytest.fixture
 def db_session(mysql_engine):
     TestingSession = sessionmaker(bind=mysql_engine, autoflush=False, expire_on_commit=False)
@@ -50,7 +75,7 @@ def db_session(mysql_engine):
 
 
 @pytest.fixture
-def client(mysql_engine):
+def client(mysql_engine, neo4j_driver):
     TestingSession = sessionmaker(bind=mysql_engine, autoflush=False, expire_on_commit=False)
 
     def _override_get_session():
@@ -60,8 +85,13 @@ def client(mysql_engine):
         finally:
             session.close()
 
+    # 每个测试前清空图数据
+    with neo4j_driver.session() as s:
+        s.run("MATCH (n) DETACH DELETE n")
+
     app = create_app()
     app.dependency_overrides[get_session] = _override_get_session
+    app.dependency_overrides[get_graph_repo] = lambda: GraphRepo(neo4j_driver)
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

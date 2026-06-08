@@ -7,6 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.mysql import get_session
+from app.db.neo4j import get_driver
+from app.repositories.graph_repo import GraphRepo
 from app.exceptions import AuthError, NotFoundError, PermissionDenied
 from app.models import MemberRole, Project, ProjectMember, User
 from app.security import decode_access_token
@@ -63,3 +65,10 @@ def require_role(min_role: MemberRole) -> Callable[..., "ProjectContext"]:
         return ProjectContext(project=project, membership=membership, user=user)
 
     return dep
+
+
+def get_graph_repo() -> GraphRepo:
+    return GraphRepo(get_driver())
+
+
+GraphRepoDep = Annotated[GraphRepo, Depends(get_graph_repo)]
