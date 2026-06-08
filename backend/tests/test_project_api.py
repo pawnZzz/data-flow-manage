@@ -68,3 +68,18 @@ def test_get_missing_project_404(client, seed):
     r = client.get("/api/v1/projects/999999", headers=_auth(seed, alice))
     assert r.status_code == 404
     assert r.json()["error"]["code"] == "NOT_FOUND"
+
+
+def test_update_project_success(client, seed):
+    alice = seed.user("alice")
+    p = seed.project(alice)
+    r = client.patch(
+        f"/api/v1/projects/{p.id}",
+        json={"name": "renamed", "description": "desc"},
+        headers=_auth(seed, alice),
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["name"] == "renamed"
+    assert body["description"] == "desc"
+    assert body["my_role"] == "owner"

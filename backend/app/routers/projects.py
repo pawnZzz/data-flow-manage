@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, status
 
 from app.deps import CurrentUser, DbSession, ProjectContext, require_role
-from app.models import MemberRole
+from app.models import MemberRole, Project
 from app.schemas.project import (
     CreateProjectRequest,
     ProjectResponse,
@@ -14,7 +14,7 @@ from app.services import project_service
 router = APIRouter(prefix="/api/v1/projects", tags=["projects"])
 
 
-def _to_response(project, role: MemberRole) -> ProjectResponse:
+def _to_response(project: Project, role: MemberRole) -> ProjectResponse:
     return ProjectResponse(
         id=project.id,
         name=project.name,
@@ -38,8 +38,11 @@ def list_projects(
 
 
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
-def create_project(payload: CreateProjectRequest, user: CurrentUser, db: DbSession) -> ProjectResponse:
+def create_project(
+    payload: CreateProjectRequest, user: CurrentUser, db: DbSession
+) -> ProjectResponse:
     project = project_service.create_project(db, user, payload.name, payload.description)
+    # service inserts the creator as the owner membership
     return _to_response(project, MemberRole.owner)
 
 
