@@ -1,18 +1,21 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
-from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.deps import DbSession, ProjectContext, require_role
-from app.models import MemberRole, User
+from app.exceptions import NotFoundError
+from app.models import MemberRole, ProjectMember, User
 from app.schemas.project import AddMemberRequest, ChangeRoleRequest, MemberResponse
 from app.services import member_service
 
 router = APIRouter(prefix="/api/v1/projects/{pid}/members", tags=["members"])
 
 
-def _to_member_response(db, membership) -> MemberResponse:
-    user = db.scalar(select(User).where(User.id == membership.user_id))
+def _to_member_response(db: Session, membership: ProjectMember) -> MemberResponse:
+    user = db.get(User, membership.user_id)
+    if user is None:
+        raise NotFoundError(f"用户 {membership.user_id} 不存在")
     return MemberResponse(
         user_id=membership.user_id,
         username=user.username,

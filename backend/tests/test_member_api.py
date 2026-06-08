@@ -27,6 +27,8 @@ def test_add_member_by_email(client, seed):
     )
     assert r.status_code == 201
     assert r.json()["user_id"] is not None
+    assert r.json()["username"] == "bob"
+    assert r.json()["role"] == "viewer"
 
 
 def test_add_member_unknown_404(client, seed):
