@@ -8,7 +8,7 @@ from testcontainers.mysql import MySqlContainer
 
 from app.db.mysql import Base, get_session
 from app.main import create_app
-from app.models import MemberRole, Project, ProjectMember, User  # noqa: F401  注册到 metadata
+from app.models import MemberRole, Project, ProjectMember, ProjectStatus, User  # noqa: F401  注册到 metadata
 from app.security import create_access_token, hash_password
 
 # Docker Desktop on macOS uses a non-default socket path
@@ -98,8 +98,6 @@ def seed(mysql_engine):
             return u
 
         def project(self, owner, name="proj", status="active"):
-            from app.models import ProjectStatus
-
             p = Project(name=name, created_by=owner.id, status=ProjectStatus(status))
             s.add(p)
             s.commit()
@@ -117,5 +115,7 @@ def seed(mysql_engine):
         def token(self, user):
             return create_access_token(subject=str(user.id))
 
-    yield Seed()
-    s.close()
+    try:
+        yield Seed()
+    finally:
+        s.close()
