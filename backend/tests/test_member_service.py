@@ -130,3 +130,61 @@ def test_add_member_invalid_role_raises(db_session, seed):
             db_session, actor_role=MemberRole.owner, actor=owner,
             project=p, username="bob", email=None, role="superadmin",
         )
+
+
+def test_admin_cannot_add_admin(db_session, seed):
+    owner = seed.user("owner")
+    seed.user("bob")
+    p = seed.project(owner)
+    with pytest.raises(PermissionDenied):
+        member_service.add_member(
+            db_session, actor_role=MemberRole.admin, actor=owner,
+            project=p, username="bob", email=None, role="admin",
+        )
+
+
+def test_admin_cannot_promote_editor_to_admin(db_session, seed):
+    owner = seed.user("owner")
+    bob = seed.user("bob")
+    p = seed.project(owner)
+    seed.member(p, bob, "editor")
+    with pytest.raises(PermissionDenied):
+        member_service.change_role(
+            db_session, actor_role=MemberRole.admin, actor=owner,
+            project=p, target_user_id=bob.id, new_role="admin",
+        )
+
+
+def test_admin_cannot_change_existing_admin(db_session, seed):
+    owner = seed.user("owner")
+    carol = seed.user("carol")
+    p = seed.project(owner)
+    seed.member(p, carol, "admin")
+    with pytest.raises(PermissionDenied):
+        member_service.change_role(
+            db_session, actor_role=MemberRole.admin, actor=owner,
+            project=p, target_user_id=carol.id, new_role="viewer",
+        )
+
+
+def test_owner_can_add_admin(db_session, seed):
+    owner = seed.user("owner")
+    bob = seed.user("bob")
+    p = seed.project(owner)
+    m = member_service.add_member(
+        db_session, actor_role=MemberRole.owner, actor=owner,
+        project=p, username="bob", email=None, role="admin",
+    )
+    assert m.role == MemberRole.admin
+
+
+def test_owner_can_promote_to_admin(db_session, seed):
+    owner = seed.user("owner")
+    bob = seed.user("bob")
+    p = seed.project(owner)
+    seed.member(p, bob, "editor")
+    m = member_service.change_role(
+        db_session, actor_role=MemberRole.owner, actor=owner,
+        project=p, target_user_id=bob.id, new_role="admin",
+    )
+    assert m.role == MemberRole.admin

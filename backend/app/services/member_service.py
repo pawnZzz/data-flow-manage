@@ -8,6 +8,8 @@ from app.models import MemberRole, Project, ProjectMember, User
 
 logger = logging.getLogger("app.audit")
 
+_PRIVILEGED_ROLES = (MemberRole.owner, MemberRole.admin)
+
 
 def list_members(db: Session, project_id: int) -> list[ProjectMember]:
     return list(
@@ -46,8 +48,8 @@ def add_member(
         new_role = MemberRole(role)
     except ValueError:
         raise ValidationError(f"无效角色: {role}")
-    if new_role == MemberRole.owner and actor_role != MemberRole.owner:
-        raise PermissionDenied("只有 owner 能添加 owner 角色")
+    if new_role in _PRIVILEGED_ROLES and actor_role != MemberRole.owner:
+        raise PermissionDenied("只有 owner 能添加 owner/admin 角色")
 
     stmt = select(User)
     if username is not None:
@@ -89,9 +91,11 @@ def change_role(
     if membership is None:
         raise NotFoundError("成员不存在")
 
-    involves_owner = membership.role == MemberRole.owner or role == MemberRole.owner
-    if involves_owner and actor_role != MemberRole.owner:
-        raise PermissionDenied("只有 owner 能变更 owner 角色")
+    involves_privileged = (
+        membership.role in _PRIVILEGED_ROLES or role in _PRIVILEGED_ROLES
+    )
+    if involves_privileged and actor_role != MemberRole.owner:
+        raise PermissionDenied("只有 owner 能变更 owner/admin 角色")
 
     if (
         membership.role == MemberRole.owner
