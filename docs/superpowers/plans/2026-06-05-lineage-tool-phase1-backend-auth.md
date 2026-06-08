@@ -6,7 +6,7 @@
 
 **Architecture:** 分层结构 routers → services → repositories/models。Phase 1 的认证只依赖 MySQL（SQLAlchemy 2.0 + Alembic）；Neo4j 连接在本阶段仅建立连接与健康检查，图相关功能留到后续阶段。统一异常处理把业务异常映射为结构化 JSON。鉴权用无状态 JWT（Bearer Token）。
 
-**Tech Stack:** Python 3.11+、FastAPI、Uvicorn、SQLAlchemy 2.0、Alembic、PyMySQL、neo4j（官方 driver）、pydantic-settings、bcrypt、PyJWT、pytest、testcontainers[mysql]、httpx。
+**Tech Stack:** Python 3.10+、FastAPI、Uvicorn、SQLAlchemy 2.0、Alembic、PyMySQL、neo4j（官方 driver）、pydantic-settings、bcrypt、PyJWT、pytest、testcontainers[mysql]、httpx。
 
 参考 spec：`docs/superpowers/specs/2026-06-05-task-lineage-tool-design.md`（§2 技术栈、§4.1 MySQL users 表、§5.1 鉴权接口、§8 错误处理、§12 安全要点）。
 
@@ -58,7 +58,7 @@
 name = "lineage-backend"
 version = "0.1.0"
 description = "任务血缘管理工具后端"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
@@ -88,7 +88,7 @@ addopts = "-v"
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py310"
 ```
 
 - [ ] **Step 2: 创建 `backend/.env.example`**

@@ -1,0 +1,36 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: lineage
+      MYSQL_USER: lineage
+      MYSQL_PASSWORD: lineage
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-prootpass"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/neo4jpassword
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4jpassword", "RETURN 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - neo4j_data:/data
+
+volumes:
+  mysql_data:
+  neo4j_data:
