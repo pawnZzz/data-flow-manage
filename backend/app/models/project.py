@@ -39,7 +39,7 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[ProjectStatus] = mapped_column(
-        Enum(ProjectStatus), default=ProjectStatus.active, nullable=False
+        Enum(ProjectStatus), default=ProjectStatus.active, server_default="active", nullable=False
     )
     # No ondelete: keep DB default RESTRICT — a user who created projects
     # must not be silently deletable (users are disabled, not deleted).
