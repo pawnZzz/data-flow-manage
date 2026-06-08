@@ -11,10 +11,12 @@ class GraphRepo:
 
     def run_write(self, cypher: str, **params: Any) -> list[dict]:
         with self._driver.session() as session:
-            result = session.execute_write(lambda tx: list(tx.run(cypher, **params)))
-        return [r.data() for r in result]
+            return session.execute_write(
+                lambda tx: [r.data() for r in tx.run(cypher, **params)]
+            )
 
     def run_read(self, cypher: str, **params: Any) -> list[dict]:
         with self._driver.session() as session:
-            result = session.execute_read(lambda tx: list(tx.run(cypher, **params)))
-        return [r.data() for r in result]
+            return session.execute_read(
+                lambda tx: [r.data() for r in tx.run(cypher, **params)]
+            )

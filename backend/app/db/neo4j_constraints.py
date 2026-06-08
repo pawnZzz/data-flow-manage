@@ -1,7 +1,7 @@
 from neo4j import Driver
 
 # spec §4.4 约束与索引；IF NOT EXISTS 保证幂等
-_STATEMENTS = [
+_DDL_STATEMENTS = [
     "CREATE CONSTRAINT lineage_node_id_unique IF NOT EXISTS "
     "FOR (n:LineageNode) REQUIRE n.id IS UNIQUE",
     "CREATE CONSTRAINT lineage_node_name_unique IF NOT EXISTS "
@@ -22,5 +22,6 @@ _STATEMENTS = [
 def init_constraints(driver: Driver) -> None:
     """幂等施加 Neo4j 约束与索引。"""
     with driver.session() as session:
-        for stmt in _STATEMENTS:
+        # DDL 走自动提交事务；IF NOT EXISTS 保证幂等
+        for stmt in _DDL_STATEMENTS:
             session.run(stmt)

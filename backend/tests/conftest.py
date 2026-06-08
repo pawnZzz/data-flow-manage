@@ -76,6 +76,7 @@ def db_session(mysql_engine):
 
 @pytest.fixture
 def client(mysql_engine, neo4j_driver):
+    # 本应用是 MySQL+Neo4j 双库，client 同时连两库；Neo4j 容器 session 级只起一次。
     TestingSession = sessionmaker(bind=mysql_engine, autoflush=False, expire_on_commit=False)
 
     def _override_get_session():
