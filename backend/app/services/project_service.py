@@ -46,6 +46,8 @@ def update_project(
     if description is not None and description != project.description:
         changed["description"] = [project.description, description]
         project.description = description
+    if not changed:
+        return project
     db.add(project)
     db.commit()
     db.refresh(project)
