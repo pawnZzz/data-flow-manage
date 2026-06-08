@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Callable
 
 from fastapi import Depends, Path
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -34,14 +34,14 @@ def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-@dataclass
+@dataclass(frozen=True)
 class ProjectContext:
     project: Project
     membership: ProjectMember
     user: User
 
 
-def require_role(min_role: MemberRole):
+def require_role(min_role: MemberRole) -> Callable[..., "ProjectContext"]:
     def dep(
         pid: Annotated[int, Path()],
         user: CurrentUser,

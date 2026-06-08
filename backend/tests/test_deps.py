@@ -68,3 +68,18 @@ def test_404_when_project_missing(role_app, seed):
     owner = seed.user("owner")
     r = role_app.get("/p/999999/admin", headers=_auth(seed, owner))
     assert r.status_code == 404
+
+
+def test_unauthenticated_returns_401(role_app):
+    r = role_app.get("/p/1/admin")  # no Authorization header
+    assert r.status_code == 401
+
+
+def test_admin_allows_admin(role_app, seed):
+    owner = seed.user("owner")
+    admin_user = seed.user("admin")
+    p = seed.project(owner)
+    seed.member(p, admin_user, "admin")
+    r = role_app.get(f"/p/{p.id}/admin", headers=_auth(seed, admin_user))
+    assert r.status_code == 200
+    assert r.json()["role"] == "admin"
