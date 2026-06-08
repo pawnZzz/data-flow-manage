@@ -207,9 +207,9 @@ def require_role(min_role: MemberRole):
 | 角色不足 | `PermissionDenied` → 403 |
 | 加成员时用户不存在 | `NotFoundError` → 404 |
 | 重复加成员 | `ConflictError` → 409 |
-| 移除 / 降级唯一 owner | `ConflictError` → 409 |
-| 踢 owner | `PermissionDenied` → 403 |
-| 非 owner 操作 owner 角色 | `PermissionDenied` → 403 |
+| 降级唯一 owner | `ConflictError` → 409 |
+| 移除 owner（任意） | `PermissionDenied` → 403 |
+| 非 owner 操作 owner/admin 角色 | `PermissionDenied` → 403 |
 | 请求体校验失败 | Pydantic → 422（Phase 1 信封已覆盖）|
 
 ### 测试（testcontainers MySQL，沿用 Phase 1 conftest）
