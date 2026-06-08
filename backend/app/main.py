@@ -37,6 +37,10 @@ def create_app() -> FastAPI:
 
     app.include_router(auth_router.router)
 
+    from app.routers import projects as projects_router
+
+    app.include_router(projects_router.router)
+
     @app.get("/api/v1/health")
     def health() -> dict:
         return {"status": "ok"}
