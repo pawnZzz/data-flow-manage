@@ -11,8 +11,10 @@ RETURN n
 GET = """
 MATCH (n:LineageNode {project_id: $pid, id: $nid})
 OPTIONAL MATCH (n)-[:CHILD_OF]->(parent:LineageNode)
-OPTIONAL MATCH (n)<-[:CHILD_OF]-(child:LineageNode)
-RETURN n, parent.id AS parent_id, count(DISTINCT child) AS children_count
+RETURN n, parent.id AS parent_id,
+  COUNT { (n)<-[:CHILD_OF]-(:LineageNode) } AS children_count,
+  COUNT { MATCH (n)-[:DEPENDS_ON*1..__DEPTH__]->(m:LineageNode) RETURN DISTINCT m } AS upstream_count,
+  COUNT { MATCH (n)<-[:DEPENDS_ON*1..__DEPTH__]-(m:LineageNode) RETURN DISTINCT m } AS downstream_count
 """
 
 UPDATE = """
@@ -20,8 +22,10 @@ MATCH (n:LineageNode {project_id: $pid, id: $nid})
 SET n += $props, n.updated_at = datetime(), n.updated_by = $uid
 WITH n
 OPTIONAL MATCH (n)-[:CHILD_OF]->(parent:LineageNode)
-OPTIONAL MATCH (n)<-[:CHILD_OF]-(child:LineageNode)
-RETURN n, parent.id AS parent_id, count(DISTINCT child) AS children_count
+RETURN n, parent.id AS parent_id,
+  COUNT { (n)<-[:CHILD_OF]-(:LineageNode) } AS children_count,
+  COUNT { (n)-[:DEPENDS_ON]->(:LineageNode) } AS upstream_count,
+  COUNT { (n)<-[:DEPENDS_ON]-(:LineageNode) } AS downstream_count
 """
 
 DELETE = """
@@ -43,7 +47,9 @@ OPTIONAL MATCH (n)<-[:CHILD_OF]-(child:LineageNode)
 WITH n, parent.id AS parent_id, count(DISTINCT child) AS children_count
 WHERE ($parent_id IS NULL OR parent_id = $parent_id)
   AND ($has_parent IS NULL OR (parent_id IS NOT NULL) = $has_parent)
-RETURN n, parent_id, children_count
+RETURN n, parent_id, children_count,
+  COUNT { (n)-[:DEPENDS_ON]->(:LineageNode) } AS upstream_count,
+  COUNT { (n)<-[:DEPENDS_ON]-(:LineageNode) } AS downstream_count
 ORDER BY n.name
 """
 

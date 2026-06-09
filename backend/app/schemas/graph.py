@@ -83,6 +83,7 @@ class NodeResponse(BaseModel):
     updated_by: int
     parent_id: str | None = None
     children_count: int
+    # 详情 GET 返回递归全传递计数；列表 GET / 改 PATCH 返回直接邻居计数（性能取舍）
     upstream_count: int = 0
     downstream_count: int = 0
 

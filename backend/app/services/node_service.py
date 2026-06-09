@@ -5,6 +5,7 @@ from typing import Any
 from neo4j.exceptions import ConstraintError
 
 from app.cypher import nodes as q
+from app.cypher import inline_depth
 from app.cypher import schemas as sq
 from app.exceptions import ConflictError, NotFoundError, ValidationError
 from app.repositories.graph_repo import GraphRepo
@@ -36,6 +37,8 @@ def _row_to_node(row: dict) -> dict:
     node["tags"] = list(node.get("tags") or [])
     node["parent_id"] = row.get("parent_id")
     node["children_count"] = row.get("children_count", 0)
+    node["upstream_count"] = row.get("upstream_count", 0)
+    node["downstream_count"] = row.get("downstream_count", 0)
     _coerce_datetimes(node)
     return node
 
@@ -66,7 +69,7 @@ def create_node(repo: GraphRepo, pid: int, uid: int, payload: dict) -> dict:
 
 
 def get_node(repo: GraphRepo, pid: int, nid: str) -> dict:
-    rows = repo.run_read(q.GET, pid=pid, nid=nid)
+    rows = repo.run_read(inline_depth(q.GET), pid=pid, nid=nid)
     if not rows:
         raise NotFoundError("节点不存在", {"id": nid})
     return _row_to_node(rows[0])
