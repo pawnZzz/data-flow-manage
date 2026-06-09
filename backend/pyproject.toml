@@ -29,6 +29,14 @@ dev = [
     "ruff>=0.3",
 ]
 
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+# 仅 app 是可安装包；migrations 是 alembic 脚本目录，flat-layout 自动发现会误判为包
+[tool.setuptools]
+packages = ["app"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
