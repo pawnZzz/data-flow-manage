@@ -17,6 +17,7 @@ dependencies = [
     "pyjwt>=2.8",
     "python-multipart>=0.0.9",
     "slowapi>=0.1.9",
+    "sqlglot>=25",
 ]
 
 [project.optional-dependencies]
