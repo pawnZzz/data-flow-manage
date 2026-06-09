@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from app.db.mysql import get_session
 from app.db.neo4j import get_driver
 from app.repositories.graph_repo import GraphRepo
-from app.exceptions import AuthError, NotFoundError, PermissionDenied
-from app.models import MemberRole, Project, ProjectMember, User
+from app.exceptions import AuthError, ConflictError, NotFoundError, PermissionDenied
+from app.models import MemberRole, Project, ProjectMember, ProjectStatus, User
 from app.security import decode_access_token
 
 _bearer = HTTPBearer(auto_error=False)
@@ -43,7 +43,9 @@ class ProjectContext:
     user: User
 
 
-def require_role(min_role: MemberRole) -> Callable[..., "ProjectContext"]:
+def require_role(
+    min_role: MemberRole, require_active: bool = False
+) -> Callable[..., "ProjectContext"]:
     def dep(
         pid: Annotated[int, Path()],
         user: CurrentUser,
@@ -62,6 +64,8 @@ def require_role(min_role: MemberRole) -> Callable[..., "ProjectContext"]:
             raise PermissionDenied("非项目成员")
         if membership.role.level < min_role.level:
             raise PermissionDenied("权限不足")
+        if require_active and project.status != ProjectStatus.active:
+            raise ConflictError("项目非活动状态，禁止写入", {"code": "PROJECT_NOT_ACTIVE"})
         return ProjectContext(project=project, membership=membership, user=user)
 
     return dep

@@ -56,7 +56,7 @@ def get_project(
 @router.patch("/{pid}", response_model=ProjectResponse)
 def update_project(
     payload: UpdateProjectRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin, require_active=True))],
     db: DbSession,
 ) -> ProjectResponse:
     project = project_service.update_project(

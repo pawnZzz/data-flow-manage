@@ -37,7 +37,7 @@ def list_members(
 @router.post("", response_model=MemberResponse, status_code=status.HTTP_201_CREATED)
 def add_member(
     payload: AddMemberRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin, require_active=True))],
     db: DbSession,
 ) -> MemberResponse:
     membership = member_service.add_member(
@@ -56,7 +56,7 @@ def add_member(
 def change_role(
     uid: int,
     payload: ChangeRoleRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin, require_active=True))],
     db: DbSession,
 ) -> MemberResponse:
     membership = member_service.change_role(
@@ -73,7 +73,7 @@ def change_role(
 @router.delete("/{uid}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_member(
     uid: int,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin, require_active=True))],
     db: DbSession,
 ) -> None:
     member_service.remove_member(

@@ -21,7 +21,7 @@ def list_schemas(
 @router.post("", response_model=SchemaResponse, status_code=status.HTTP_201_CREATED)
 def create_schema(
     payload: CreateSchemaRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> SchemaResponse:
     fields = [f.model_dump() for f in payload.fields]
@@ -43,7 +43,7 @@ def get_schema(
 def update_schema(
     type_key: str,
     payload: UpdateSchemaRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> SchemaResponse:
     fields = [f.model_dump() for f in payload.fields] if payload.fields is not None else None
@@ -55,7 +55,7 @@ def update_schema(
 @router.delete("/{type_key}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_schema(
     type_key: str,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.admin, require_active=True))],
     repo: GraphRepoDep,
 ) -> None:
     schema_service.delete_schema(repo, ctx.project.id, type_key)

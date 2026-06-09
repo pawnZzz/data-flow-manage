@@ -40,7 +40,7 @@ def list_nodes(
 @router.post("", response_model=NodeResponse, status_code=status.HTTP_201_CREATED)
 def create_node(
     payload: CreateNodeRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> NodeResponse:
     return node_service.create_node(repo, ctx.project.id, ctx.user.id, payload.model_dump())
@@ -59,7 +59,7 @@ def get_node(
 def update_node(
     nid: str,
     payload: UpdateNodeRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> NodeResponse:
     return node_service.update_node(
@@ -70,7 +70,7 @@ def update_node(
 @router.delete("/{nid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_node(
     nid: str,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> None:
     node_service.delete_node(repo, ctx.project.id, nid)
@@ -81,7 +81,7 @@ def delete_node(
 def set_parent(
     nid: str,
     payload: SetParentRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> None:
     node_service.set_parent(repo, ctx.project.id, nid, payload.parent_id)
@@ -91,7 +91,7 @@ def set_parent(
 @router.delete("/{nid}/parent", status_code=status.HTTP_204_NO_CONTENT)
 def clear_parent(
     nid: str,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> None:
     node_service.clear_parent(repo, ctx.project.id, nid)

@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/v1/projects/{pid}/sql-import", tags=["sql-import
 @router.post("/preview", response_model=PreviewResponse)
 def preview(
     payload: PreviewRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> PreviewResponse:
     return sql_import_service.preview(repo, ctx.project.id, payload.sql, payload.dialect)
@@ -27,7 +27,7 @@ def preview(
 @router.post("/commit", response_model=CommitResponse)
 def commit(
     payload: CommitRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> CommitResponse:
     return sql_import_service.commit(repo, ctx.project.id, ctx.user.id, payload.model_dump())

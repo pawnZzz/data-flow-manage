@@ -30,7 +30,7 @@ def list_edges(
 @router.post("", response_model=CreateEdgeResponse, status_code=status.HTTP_201_CREATED)
 def create_edge(
     payload: CreateEdgeRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> CreateEdgeResponse:
     return edge_service.create_edge(repo, ctx.project.id, ctx.user.id, payload.model_dump())
@@ -49,7 +49,7 @@ def get_edge(
 def update_edge(
     eid: str,
     payload: UpdateEdgeRequest,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> EdgeResponse:
     return edge_service.update_edge(
@@ -60,7 +60,7 @@ def update_edge(
 @router.delete("/{eid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_edge(
     eid: str,
-    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor))],
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.editor, require_active=True))],
     repo: GraphRepoDep,
 ) -> None:
     edge_service.delete_edge(repo, ctx.project.id, eid, ctx.user.id)
