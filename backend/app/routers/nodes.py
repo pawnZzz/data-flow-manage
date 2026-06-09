@@ -6,11 +6,13 @@ from app.deps import GraphRepoDep, ProjectContext, require_role
 from app.models import MemberRole
 from app.schemas.graph import (
     CreateNodeRequest,
+    ImpactResponse,
+    NodePage,
     NodeResponse,
     SetParentRequest,
     UpdateNodeRequest,
 )
-from app.services import node_service
+from app.services import graph_service, node_service
 
 router = APIRouter(prefix="/api/v1/projects/{pid}/nodes", tags=["nodes"])
 
@@ -112,3 +114,34 @@ def list_descendants(
     repo: GraphRepoDep,
 ) -> list[NodeResponse]:
     return node_service.list_descendants(repo, ctx.project.id, nid)
+
+
+@router.get("/{nid}/upstream", response_model=NodePage)
+def node_upstream(
+    nid: str,
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.viewer))],
+    repo: GraphRepoDep,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> NodePage:
+    return graph_service.upstream(repo, ctx.project.id, nid, limit, offset)
+
+
+@router.get("/{nid}/downstream", response_model=NodePage)
+def node_downstream(
+    nid: str,
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.viewer))],
+    repo: GraphRepoDep,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> NodePage:
+    return graph_service.downstream(repo, ctx.project.id, nid, limit, offset)
+
+
+@router.get("/{nid}/impact", response_model=ImpactResponse)
+def node_impact(
+    nid: str,
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.viewer))],
+    repo: GraphRepoDep,
+) -> ImpactResponse:
+    return graph_service.impact(repo, ctx.project.id, nid)
