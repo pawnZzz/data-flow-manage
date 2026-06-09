@@ -48,3 +48,8 @@ class MemberResponse(BaseModel):
     display_name: str | None
     role: str
     joined_at: datetime
+
+
+class PurgeResponse(BaseModel):
+    deleted_nodes: int
+    deleted_schemas: int

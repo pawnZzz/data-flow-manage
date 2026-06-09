@@ -2,11 +2,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.deps import CurrentUser, DbSession, ProjectContext, require_role
+from app.deps import CurrentUser, DbSession, GraphRepoDep, ProjectContext, require_role
 from app.models import MemberRole, Project
 from app.schemas.project import (
     CreateProjectRequest,
     ProjectResponse,
+    PurgeResponse,
     UpdateProjectRequest,
 )
 from app.services import project_service
@@ -72,3 +73,21 @@ def archive_project(
 ) -> None:
     project_service.archive_project(db, ctx.user, ctx.project)
     return None
+
+
+@router.post("/{pid}/unarchive", response_model=ProjectResponse)
+def unarchive_project(
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.owner))],
+    db: DbSession,
+) -> ProjectResponse:
+    project = project_service.unarchive_project(db, ctx.user, ctx.project)
+    return _to_response(project, ctx.membership.role)
+
+
+@router.post("/{pid}/purge", response_model=PurgeResponse)
+def purge_project(
+    ctx: Annotated[ProjectContext, Depends(require_role(MemberRole.owner))],
+    db: DbSession,
+    repo: GraphRepoDep,
+) -> PurgeResponse:
+    return project_service.purge_project(db, repo, ctx.user, ctx.project)

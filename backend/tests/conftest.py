@@ -143,6 +143,12 @@ def seed(mysql_engine):
             )
             s.commit()
 
+        def set_status(self, project, status):
+            from app.models import ProjectStatus
+            obj = s.get(Project, project.id)
+            obj.status = ProjectStatus(status)
+            s.commit()
+
         def token(self, user):
             return create_access_token(subject=str(user.id))
 
