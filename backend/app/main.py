@@ -57,6 +57,10 @@ def create_app() -> FastAPI:
 
     app.include_router(edges_router.router)
 
+    from app.routers import graph as graph_router
+
+    app.include_router(graph_router.router)
+
     @app.get("/api/v1/health")
     def health() -> dict:
         return {"status": "ok"}

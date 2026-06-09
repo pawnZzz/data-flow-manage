@@ -183,6 +183,11 @@ class PathItem(BaseModel):
     score: int | None = None
 
 
+class CriticalPathRequest(BaseModel):
+    mode: Literal["impact", "longest", "manual"] = "impact"
+    node_ids: list[str] | None = None
+
+
 class CriticalPathResponse(BaseModel):
     mode: str
     paths: list[PathItem]

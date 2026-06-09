@@ -45,3 +45,38 @@ NODE_CYCLES = (
     "RETURN [x IN nodes(path) | " + GNODE + "] AS nodes, "
     "[r IN relationships(path) | " + EDGE_FROM_REL + "] AS edges LIMIT 50"
 )
+
+# 模式 1：下游影响面最大的节点 → 取其最深下游链（score=影响面）
+CRITICAL_IMPACT = (
+    "MATCH (n:LineageNode {project_id: $pid}) "
+    "OPTIONAL MATCH (n)<-[:DEPENDS_ON*1..__DEPTH__]-(d:LineageNode) "
+    "WITH n, count(DISTINCT d) AS impact ORDER BY impact DESC LIMIT 1 "
+    "MATCH path = (n)<-[:DEPENDS_ON*1..__DEPTH__]-(leaf:LineageNode) "
+    "WHERE NOT (leaf)<-[:DEPENDS_ON]-() "
+    "RETURN [x IN nodes(path) | " + GNODE + "] AS nodes, "
+    "[r IN relationships(path) | " + EDGE_FROM_REL + "] AS edges, "
+    "length(path) AS depth, impact AS score ORDER BY depth DESC LIMIT 1"
+)
+
+# 模式 2：DAG 最长链 top5（无入边起点 → 无出边终点）
+CRITICAL_LONGEST = (
+    "MATCH path = (start:LineageNode {project_id: $pid})"
+    "-[:DEPENDS_ON*1..__DEPTH__]->(end:LineageNode) "
+    "WHERE NOT ()-[:DEPENDS_ON]->(start) AND NOT (end)-[:DEPENDS_ON]->() "
+    "RETURN [x IN nodes(path) | " + GNODE + "] AS nodes, "
+    "[r IN relationships(path) | " + EDGE_FROM_REL + "] AS edges, "
+    "length(path) AS depth, null AS score ORDER BY depth DESC LIMIT 5"
+)
+
+# 模式 3：手动关键节点两两 shortestPath。node_ids 给定则用之，否则用 is_critical
+CRITICAL_MANUAL = (
+    "MATCH (a:LineageNode {project_id: $pid}) "
+    "MATCH (b:LineageNode {project_id: $pid}) "
+    "WHERE a.id <> b.id AND "
+    "(($node_ids IS NULL AND a.is_critical AND b.is_critical) OR "
+    " ($node_ids IS NOT NULL AND a.id IN $node_ids AND b.id IN $node_ids)) "
+    "MATCH path = shortestPath((a)-[:DEPENDS_ON*1..__DEPTH__]->(b)) "
+    "RETURN [x IN nodes(path) | " + GNODE + "] AS nodes, "
+    "[r IN relationships(path) | " + EDGE_FROM_REL + "] AS edges, "
+    "length(path) AS depth, null AS score ORDER BY depth DESC LIMIT 5"
+)

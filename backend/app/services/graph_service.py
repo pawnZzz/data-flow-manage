@@ -49,3 +49,24 @@ def impact(repo: GraphRepo, pid: int, nid: str) -> dict:
         "downstream": [_row_to_node(r) for r in down_rows],
         "warnings": {"cycles": [_coerce_cycle(c) for c in cycles]},
     }
+
+
+_CRITICAL_Q = {
+    "impact": q.CRITICAL_IMPACT,
+    "longest": q.CRITICAL_LONGEST,
+    "manual": q.CRITICAL_MANUAL,
+}
+
+
+def _coerce_path(row: dict) -> dict:
+    return {
+        "nodes": row["nodes"],
+        "edges": [_coerce_edge(e) for e in row["edges"]],
+        "depth": row["depth"],
+        "score": row.get("score"),
+    }
+
+
+def critical_paths(repo: GraphRepo, pid: int, mode: str, node_ids: list | None) -> dict:
+    rows = repo.run_read(inline_depth(_CRITICAL_Q[mode]), pid=pid, node_ids=node_ids)
+    return {"mode": mode, "paths": [_coerce_path(r) for r in rows]}
