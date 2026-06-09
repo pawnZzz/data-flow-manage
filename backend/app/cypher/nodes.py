@@ -57,6 +57,10 @@ EXISTS = """
 MATCH (n:LineageNode {project_id: $pid, id: $nid}) RETURN n.id AS id
 """
 
+GET_BY_NAME = """
+MATCH (n:LineageNode {project_id: $pid, name: $name}) RETURN n.id AS id
+"""
+
 # 成环预检：parent 是否已是 nid 的后代（存在则设置会成环）
 PARENT_WOULD_CYCLE = """
 MATCH (parent:LineageNode {project_id: $pid, id: $parent_id})
