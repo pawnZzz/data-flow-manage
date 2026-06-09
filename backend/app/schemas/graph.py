@@ -83,7 +83,105 @@ class NodeResponse(BaseModel):
     updated_by: int
     parent_id: str | None = None
     children_count: int
+    upstream_count: int = 0
+    downstream_count: int = 0
 
 
 class SetParentRequest(BaseModel):
     parent_id: str = Field(min_length=1)
+
+
+EdgeType = Literal["trigger", "data_flow", "api_call", "custom"]
+Strength = Literal["strong", "weak"]
+
+
+class CreateEdgeRequest(BaseModel):
+    source_id: str = Field(min_length=1)
+    target_id: str = Field(min_length=1)
+    edge_type: EdgeType = "data_flow"
+    description: str | None = None
+    is_required: bool = True
+    strength: Strength = "strong"
+    ext_props: dict[str, Any] = {}
+
+
+class UpdateEdgeRequest(BaseModel):
+    edge_type: EdgeType | None = None
+    description: str | None = None
+    is_required: bool | None = None
+    strength: Strength | None = None
+    ext_props: dict[str, Any] | None = None
+
+
+class EdgeResponse(BaseModel):
+    id: str
+    project_id: int
+    source_id: str
+    target_id: str
+    edge_type: str
+    description: str | None = None
+    is_required: bool
+    strength: str
+    ext_props: dict[str, Any]
+    created_at: datetime
+    created_by: int
+
+
+class EdgeWarnings(BaseModel):
+    creates_cycle: bool = False
+
+
+class CreateEdgeResponse(BaseModel):
+    edge: EdgeResponse
+    warnings: EdgeWarnings
+
+
+class GraphNode(BaseModel):
+    id: str
+    name: str
+    type: str
+    priority: str | None = None
+    is_critical: bool
+    parent_id: str | None = None
+
+
+class GraphStats(BaseModel):
+    node_count: int
+    edge_count: int
+    has_cycle: bool
+
+
+class GraphResponse(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[EdgeResponse]
+    stats: GraphStats
+
+
+class NodePage(BaseModel):
+    items: list[NodeResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class CycleResponse(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[EdgeResponse]
+
+
+class ImpactResponse(BaseModel):
+    upstream: list[NodeResponse]
+    downstream: list[NodeResponse]
+    warnings: dict
+
+
+class PathItem(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[EdgeResponse]
+    depth: int
+    score: int | None = None
+
+
+class CriticalPathResponse(BaseModel):
+    mode: str
+    paths: list[PathItem]
