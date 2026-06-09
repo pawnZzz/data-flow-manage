@@ -65,6 +65,10 @@ def create_app() -> FastAPI:
 
     app.include_router(sql_import_router.router)
 
+    from app.routers import graph_io as graph_io_router
+
+    app.include_router(graph_io_router.router)
+
     @app.get("/api/v1/health")
     def health() -> dict:
         return {"status": "ok"}
