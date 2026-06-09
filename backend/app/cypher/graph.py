@@ -68,6 +68,46 @@ CRITICAL_LONGEST = (
     "length(path) AS depth, null AS score ORDER BY depth DESC LIMIT 5"
 )
 
+# 子图收集后回捞内部边的公共尾部
+_SUBGRAPH_TAIL = (
+    "WITH collect(DISTINCT n) AS ns "
+    "UNWIND ns AS node "
+    "OPTIONAL MATCH (node)-[r:DEPENDS_ON]->(other:LineageNode) WHERE other IN ns "
+    "WITH ns, collect(DISTINCT r) AS rels "
+    "RETURN [x IN ns | " + GNODE + "] AS nodes, "
+    "[r IN rels | " + EDGE_FROM_REL + "] AS edges"
+)
+
+# __D__ 为 clamp 后的请求深度（服务层 replace）
+SUBGRAPH_BOTH = (
+    "MATCH (center:LineageNode {project_id: $pid, id: $center_id}) "
+    "CALL { WITH center MATCH (center)-[:DEPENDS_ON*0..__D__]->(n:LineageNode) RETURN n "
+    "UNION WITH center MATCH (center)<-[:DEPENDS_ON*0..__D__]-(n:LineageNode) RETURN n } "
+    + _SUBGRAPH_TAIL
+)
+SUBGRAPH_UP = (
+    "MATCH (center:LineageNode {project_id: $pid, id: $center_id}) "
+    "MATCH (center)-[:DEPENDS_ON*0..__D__]->(n:LineageNode) " + _SUBGRAPH_TAIL
+)
+SUBGRAPH_DOWN = (
+    "MATCH (center:LineageNode {project_id: $pid, id: $center_id}) "
+    "MATCH (center)<-[:DEPENDS_ON*0..__D__]-(n:LineageNode) " + _SUBGRAPH_TAIL
+)
+FULL_GRAPH = (
+    "MATCH (n:LineageNode {project_id: $pid}) " + _SUBGRAPH_TAIL
+)
+
+# 注：环检测受 __DEPTH__ 上限约束，超过 max_traversal_depth 跳的超长环不计
+HAS_CYCLE = (
+    "RETURN EXISTS { MATCH (n:LineageNode {project_id: $pid})"
+    "-[:DEPENDS_ON*1..__DEPTH__]->(n) } AS has"
+)
+PROJECT_CYCLES = (
+    "MATCH path=(n:LineageNode {project_id: $pid})-[:DEPENDS_ON*1..__DEPTH__]->(n) "
+    "RETURN [x IN nodes(path) | " + GNODE + "] AS nodes, "
+    "[r IN relationships(path) | " + EDGE_FROM_REL + "] AS edges LIMIT 50"
+)
+
 # 模式 3：手动关键节点两两 shortestPath。node_ids 给定则用之，否则用 is_critical
 CRITICAL_MANUAL = (
     "MATCH (a:LineageNode {project_id: $pid}) "

@@ -57,3 +57,30 @@ def test_impact_shape(client, seed):
     assert {n["name"] for n in body["upstream"]} == {"c", "d"}
     assert {n["name"] for n in body["downstream"]} == {"a"}
     assert body["warnings"]["cycles"] == []
+
+
+def test_subgraph_centered(client, seed):
+    owner, p, ids = _setup_chain(client, seed)  # a->b->c->d
+    r = client.get(f"/api/v1/projects/{p.id}/graph?center={ids['b']}&depth=1&direction=both",
+                   headers=_auth(seed, owner))
+    assert r.status_code == 200
+    body = r.json()
+    # depth1 both：b 自身 + 上游 c + 下游 a
+    assert {n["name"] for n in body["nodes"]} == {"a", "b", "c"}
+    assert body["stats"]["has_cycle"] is False
+
+
+def test_subgraph_full_graph(client, seed):
+    owner, p, ids = _setup_chain(client, seed)
+    r = client.get(f"/api/v1/projects/{p.id}/graph", headers=_auth(seed, owner))
+    body = r.json()
+    assert body["stats"]["node_count"] == 4
+    assert body["stats"]["edge_count"] == 3
+
+
+def test_subgraph_direction_upstream(client, seed):
+    owner, p, ids = _setup_chain(client, seed)
+    r = client.get(f"/api/v1/projects/{p.id}/graph?center={ids['a']}&depth=15&direction=upstream",
+                   headers=_auth(seed, owner))
+    # a 的上游 b,c,d + a 自身
+    assert {n["name"] for n in r.json()["nodes"]} == {"a", "b", "c", "d"}

@@ -1,5 +1,6 @@
 import json
 
+from app.config import get_settings
 from app.cypher import graph as q
 from app.cypher import inline_depth
 from app.repositories.graph_repo import GraphRepo
@@ -70,3 +71,32 @@ def _coerce_path(row: dict) -> dict:
 def critical_paths(repo: GraphRepo, pid: int, mode: str, node_ids: list | None) -> dict:
     rows = repo.run_read(inline_depth(_CRITICAL_Q[mode]), pid=pid, node_ids=node_ids)
     return {"mode": mode, "paths": [_coerce_path(r) for r in rows]}
+
+
+_SUBGRAPH_Q = {"upstream": q.SUBGRAPH_UP, "downstream": q.SUBGRAPH_DOWN, "both": q.SUBGRAPH_BOTH}
+
+
+def _clamp_depth(d: int) -> int:
+    return max(0, min(d, get_settings().max_traversal_depth))
+
+
+def subgraph(repo: GraphRepo, pid: int, center: str | None, depth: int, direction: str) -> dict:
+    # 两套深度占位符：__D__ 是请求深度（clamp 后 replace），__DEPTH__ 是 config 上限（inline_depth）
+    if center is None:
+        rows = repo.run_read(q.FULL_GRAPH, pid=pid)
+    else:
+        get_node(repo, pid, center)  # 404 if center missing
+        cypher = _SUBGRAPH_Q[direction].replace("__D__", str(_clamp_depth(depth)))
+        rows = repo.run_read(cypher, pid=pid, center_id=center)
+    nodes = rows[0]["nodes"] if rows else []
+    edges = [_coerce_edge(e) for e in (rows[0]["edges"] if rows else [])]
+    has_cycle = repo.run_read(inline_depth(q.HAS_CYCLE), pid=pid)[0]["has"]
+    return {
+        "nodes": nodes, "edges": edges,
+        "stats": {"node_count": len(nodes), "edge_count": len(edges), "has_cycle": has_cycle},
+    }
+
+
+def cycles(repo: GraphRepo, pid: int) -> list[dict]:
+    rows = repo.run_read(inline_depth(q.PROJECT_CYCLES), pid=pid)
+    return [_coerce_cycle(r) for r in rows]
