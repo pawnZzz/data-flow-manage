@@ -5,6 +5,14 @@ const routes: RouteRecordRaw[] = [
   { path: "/login", name: "login", component: () => import("@/views/LoginView.vue"), meta: { public: true } },
   { path: "/profile", name: "profile", component: () => import("@/views/ProfileView.vue") },
   { path: "/projects", name: "projects", component: () => import("@/views/ProjectListView.vue") },
+  {
+    path: "/projects/:pid",
+    component: () => import("@/views/ProjectLayout.vue"),
+    children: [
+      { path: "", redirect: (to) => `/projects/${to.params.pid}/members` },
+      { path: "members", name: "members", component: () => import("@/views/MembersView.vue") },
+    ],
+  },
   { path: "/", redirect: "/projects" },
 ]
 
