@@ -11,7 +11,7 @@
         <template #default="{ row }">
           <el-select
             v-if="proj.can('admin') && row.role !== 'owner'"
-            :model-value="row.role" @change="(r) => onChangeRole(row, r)"
+            :model-value="row.role" @change="(r: Role) => onChangeRole(row, r)"
           >
             <el-option v-for="r in roles" :key="r" :label="r" :value="r" />
           </el-select>

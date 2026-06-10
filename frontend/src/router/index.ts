@@ -11,6 +11,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       { path: "", redirect: (to) => `/projects/${to.params.pid}/members` },
       { path: "members", name: "members", component: () => import("@/views/MembersView.vue") },
+      { path: "schemas", name: "schemas", component: () => import("@/views/SchemasView.vue") },
     ],
   },
   { path: "/", redirect: "/projects" },
