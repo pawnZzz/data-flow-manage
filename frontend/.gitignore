@@ -1,3 +1,10 @@
 node_modules/
 dist/
 *.local
+
+# vue-tsc -b (composite) 构建产物
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+vitest.config.js
+vitest.config.d.ts
