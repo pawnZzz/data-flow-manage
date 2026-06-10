@@ -26,5 +26,5 @@ it("已登录访问 /login 重定向到 /", async () => {
   await router.push("/profile")
   await router.push("/login")
   await router.isReady()
-  expect(router.currentRoute.value.path).toBe("/profile")
+  expect(router.currentRoute.value.path).toBe("/projects")
 })

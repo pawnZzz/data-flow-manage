@@ -4,7 +4,8 @@ import { useAuthStore } from "@/stores/auth"
 const routes: RouteRecordRaw[] = [
   { path: "/login", name: "login", component: () => import("@/views/LoginView.vue"), meta: { public: true } },
   { path: "/profile", name: "profile", component: () => import("@/views/ProfileView.vue") },
-  { path: "/", redirect: "/profile" },
+  { path: "/projects", name: "projects", component: () => import("@/views/ProjectListView.vue") },
+  { path: "/", redirect: "/projects" },
 ]
 
 const router = createRouter({ history: createWebHistory(), routes })
