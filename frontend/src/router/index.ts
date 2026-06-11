@@ -9,7 +9,7 @@ const routes: RouteRecordRaw[] = [
     path: "/projects/:pid",
     component: () => import("@/views/ProjectLayout.vue"),
     children: [
-      { path: "", redirect: (to) => `/projects/${to.params.pid}/members` },
+      { path: "", name: "graph", component: () => import("@/views/GraphView.vue") },
       { path: "members", name: "members", component: () => import("@/views/MembersView.vue") },
       { path: "schemas", name: "schemas", component: () => import("@/views/SchemasView.vue") },
     ],

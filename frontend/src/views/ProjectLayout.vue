@@ -7,6 +7,7 @@
     </header>
     <div class="body">
       <nav class="side">
+        <router-link :to="`/projects/${pid}`">图谱</router-link>
         <router-link :to="`/projects/${pid}/members`">成员</router-link>
         <router-link :to="`/projects/${pid}/schemas`">类型 Schema</router-link>
       </nav>
