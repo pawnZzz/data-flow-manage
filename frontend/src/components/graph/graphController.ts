@@ -7,6 +7,7 @@ export class GraphController {
   private graph: Graph | null = null
   private nodes: GraphSubgraphNode[] = []
   private edges: GraphEdge[] = []
+  private editable = false
 
   init(container: HTMLElement): void {
     this.graph = new Graph({
@@ -15,6 +16,20 @@ export class GraphController {
       panning: true,
       mousewheel: { enabled: true },
       interacting: { nodeMovable: true },
+      // Connecting options are read live at interaction time, so we gate both
+      // the start (validateMagnet) and the completion (validateConnection) of a
+      // node→node edge on `this.editable`. The node body is made a magnet in
+      // setData; `allowNode` lets an edge target a node body (no ports needed).
+      connecting: {
+        snap: true,
+        allowBlank: false,
+        allowLoop: false,
+        allowMulti: false,
+        allowNode: true,
+        router: "normal",
+        validateMagnet: () => this.editable,
+        validateConnection: () => this.editable,
+      },
     })
   }
 
@@ -33,7 +48,9 @@ export class GraphController {
           height: x.height,
           // X6 v3 renders node text via the `label` selector; top-level `label`
           // is not auto-mapped, so set the text through attrs.label.text.
-          attrs: { ...x.attrs, label: { text: x.label } },
+          // `body.magnet` makes the body a connection source; validateMagnet
+          // gates whether dragging an edge actually starts (editable only).
+          attrs: { ...x.attrs, body: { ...x.attrs.body, magnet: true }, label: { text: x.label } },
         }
       }),
       edges: edges.map((e) => ({ id: e.id, source: e.source_id, target: e.target_id })),
@@ -83,6 +100,31 @@ export class GraphController {
 
   onNodeClick(cb: (id: string) => void): void {
     this.graph?.on("node:click", ({ node }) => cb(node.id))
+  }
+
+  setEditable(on: boolean): void {
+    this.editable = on
+  }
+
+  onEdgeConnected(cb: (sourceId: string, targetId: string, edgeId: string) => void): void {
+    this.graph?.on("edge:connected", ({ edge }) => {
+      const s = edge.getSourceCellId()
+      const t = edge.getTargetCellId()
+      if (s && t) cb(s, t, edge.id)
+    })
+  }
+
+  removeEdgeCell(edgeId: string): void {
+    const cell = this.graph?.getCellById(edgeId)
+    if (cell?.isEdge()) cell.remove()
+  }
+
+  onNodeContextmenu(cb: (id: string, x: number, y: number) => void): void {
+    this.graph?.on("node:contextmenu", ({ node, e }) => cb(node.id, e.clientX, e.clientY))
+  }
+
+  onEdgeContextmenu(cb: (id: string, x: number, y: number) => void): void {
+    this.graph?.on("edge:contextmenu", ({ edge, e }) => cb(edge.id, e.clientX, e.clientY))
   }
 
   dispose(): void {

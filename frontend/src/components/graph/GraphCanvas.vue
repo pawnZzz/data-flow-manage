@@ -12,8 +12,15 @@ const props = defineProps<{
   matchedIds: Set<string> | null
   selectedId: string | null
   savedPositions: Record<string, XYPos>
+  editable: boolean
 }>()
-const emit = defineEmits<{ select: [id: string]; nodeMoved: [id: string, xy: XYPos] }>()
+const emit = defineEmits<{
+  select: [id: string]
+  nodeMoved: [id: string, xy: XYPos]
+  edgeConnected: [sourceId: string, targetId: string, edgeId: string]
+  nodeContextmenu: [id: string, x: number, y: number]
+  edgeContextmenu: [id: string, x: number, y: number]
+}>()
 
 const el = ref<HTMLElement>()
 const controller = new GraphController()
@@ -31,6 +38,13 @@ onMounted(async () => {
   controller.init(el.value!)
   controller.onNodeClick((id) => emit("select", id))
   controller.onNodeMoved((id, xy) => emit("nodeMoved", id, xy))
+  controller.setEditable(props.editable)
+  controller.onEdgeConnected((s, t, edgeId) => {
+    controller.removeEdgeCell(edgeId)
+    emit("edgeConnected", s, t, edgeId)
+  })
+  controller.onNodeContextmenu((id, x, y) => emit("nodeContextmenu", id, x, y))
+  controller.onEdgeContextmenu((id, x, y) => emit("edgeContextmenu", id, x, y))
   await render()
 })
 onBeforeUnmount(() => controller.dispose())
@@ -38,6 +52,7 @@ onBeforeUnmount(() => controller.dispose())
 watch(() => props.subgraph, render)
 watch(() => props.matchedIds, (ids) => controller.applyMatch(ids))
 watch(() => props.selectedId, (id) => controller.highlightSelected(id))
+watch(() => props.editable, (on) => controller.setEditable(on))
 
 defineExpose({
   relayout: () => controller.runLayout(),

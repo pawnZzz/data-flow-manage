@@ -5,6 +5,8 @@ const calls = vi.hoisted(() => ({
   init: vi.fn(), setData: vi.fn(), applyPositions: vi.fn(), runLayout: vi.fn().mockResolvedValue({}),
   highlightSelected: vi.fn(), applyMatch: vi.fn(), centerOn: vi.fn(),
   onNodeClick: vi.fn(), onNodeMoved: vi.fn(), dispose: vi.fn(),
+  setEditable: vi.fn(), onEdgeConnected: vi.fn(), removeEdgeCell: vi.fn(),
+  onNodeContextmenu: vi.fn(), onEdgeContextmenu: vi.fn(),
 }))
 vi.mock("@/components/graph/graphController", () => ({
   GraphController: vi.fn(() => calls),
@@ -24,7 +26,7 @@ beforeEach(() => {
 
 function mountCanvas(props = {}) {
   return mount(GraphCanvas, {
-    props: { subgraph: SG, matchedIds: null, selectedId: null, savedPositions: {}, ...props },
+    props: { subgraph: SG, matchedIds: null, selectedId: null, savedPositions: {}, editable: false, ...props },
     attachTo: document.body,
   })
 }
@@ -66,4 +68,28 @@ it("卸载 dispose", async () => {
   await flushPromises()
   w.unmount()
   expect(calls.dispose).toHaveBeenCalled()
+})
+
+it("editable=true 时 setEditable(true) 并注册编辑回调", async () => {
+  mountCanvas({ editable: true })
+  await flushPromises()
+  expect(calls.setEditable).toHaveBeenCalledWith(true)
+  expect(calls.onEdgeConnected).toHaveBeenCalled()
+  expect(calls.onNodeContextmenu).toHaveBeenCalled()
+  expect(calls.onEdgeContextmenu).toHaveBeenCalled()
+})
+
+it("editable=false 时 setEditable(false)", async () => {
+  mountCanvas({ editable: false })
+  await flushPromises()
+  expect(calls.setEditable).toHaveBeenCalledWith(false)
+})
+
+it("edge:connected 回调先 removeEdgeCell 再 emit edgeConnected", async () => {
+  const w = mountCanvas({ editable: true })
+  await flushPromises()
+  const cb = calls.onEdgeConnected.mock.calls[0][0] as (s: string, t: string, id: string) => void
+  cb("a", "b", "tmpEdge")
+  expect(calls.removeEdgeCell).toHaveBeenCalledWith("tmpEdge")
+  expect(w.emitted("edgeConnected")?.[0]).toEqual(["a", "b", "tmpEdge"])
 })

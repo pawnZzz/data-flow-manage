@@ -18,6 +18,7 @@
         :matched-ids="store.matchedIds"
         :selected-id="store.selectedId"
         :saved-positions="savedPositions"
+        :editable="false"
         @select="onSelect"
         @node-moved="onNodeMoved"
       />
