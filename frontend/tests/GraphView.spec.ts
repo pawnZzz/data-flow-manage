@@ -7,11 +7,16 @@ const store = vi.hoisted(() => ({
   loadGraph: vi.fn().mockResolvedValue(undefined), select: vi.fn(), setFilter: vi.fn(), clearFilters: vi.fn(),
 }))
 vi.mock("@/stores/graph", () => ({ useGraphStore: () => store }))
+vi.mock("@/stores/project", () => ({ useProjectStore: () => ({ can: () => true }) }))
 vi.mock("@/stores/auth", () => ({ useAuthStore: () => ({ user: { id: 7 } }) }))
 vi.mock("vue-router", () => ({ useRoute: () => ({ params: { pid: "1" } }) }))
+vi.mock("@/api/schemas", () => ({ schemasApi: { list: vi.fn().mockResolvedValue([]) } }))
 vi.mock("@/components/graph/GraphCanvas.vue", () => ({ default: { name: "GraphCanvas", template: "<div class='gc' />" } }))
 vi.mock("@/components/sidebar/FilterBar.vue", () => ({ default: { name: "FilterBar", template: "<div class='fb' />" } }))
 vi.mock("@/components/sidebar/NodeTree.vue", () => ({ default: { name: "NodeTree", template: "<div class='nt' />" } }))
+vi.mock("@/components/graph/CreateNodeDialog.vue", () => ({ default: { name: "CreateNodeDialog", template: "<div />" } }))
+vi.mock("@/components/graph/SetParentDialog.vue", () => ({ default: { name: "SetParentDialog", template: "<div />" } }))
+vi.mock("@/components/graph/NodeContextMenu.vue", () => ({ default: { name: "NodeContextMenu", template: "<div />" } }))
 import ElementPlus from "element-plus"
 import GraphView from "@/views/GraphView.vue"
 
