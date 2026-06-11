@@ -2,6 +2,7 @@ import { computed, ref } from "vue"
 import { defineStore } from "pinia"
 import { graphApi } from "@/api/graph"
 import { nodesApi } from "@/api/nodes"
+import { edgesApi } from "@/api/edges"
 import type { NodeFilters, NodeResponse, Subgraph } from "@/types/graph"
 
 export const useGraphStore = defineStore("graph", () => {
@@ -9,6 +10,7 @@ export const useGraphStore = defineStore("graph", () => {
   const sidebarNodes = ref<NodeResponse[]>([])
   const selectedId = ref<string | null>(null)
   const filters = ref<NodeFilters>({})
+  const currentPid = ref<number | null>(null)
 
   const hasFilter = computed(() =>
     Object.values(filters.value).some((v) => v !== undefined && v !== ""),
@@ -34,6 +36,7 @@ export const useGraphStore = defineStore("graph", () => {
   })
 
   async function loadGraph(pid: number) {
+    currentPid.value = pid
     const [sg, nodes] = await Promise.all([graphApi.getSubgraph(pid), nodesApi.list(pid)])
     subgraph.value = sg
     sidebarNodes.value = nodes
@@ -48,15 +51,49 @@ export const useGraphStore = defineStore("graph", () => {
   function clearFilters() {
     filters.value = {}
   }
+  function pid(): number {
+    if (currentPid.value === null) throw new Error("no current project loaded")
+    return currentPid.value
+  }
+
+  async function createNode(body: { name: string; type: string }) {
+    const node = await nodesApi.create(pid(), body)
+    await loadGraph(pid())
+    return node
+  }
+  async function deleteNode(nid: string) {
+    await nodesApi.remove(pid(), nid)
+    await loadGraph(pid())
+  }
+  async function createEdge(body: { source_id: string; target_id: string; edge_type?: string }) {
+    const res = await edgesApi.create(pid(), body)
+    await loadGraph(pid())
+    return res
+  }
+  async function deleteEdge(eid: string) {
+    await edgesApi.remove(pid(), eid)
+    await loadGraph(pid())
+  }
+  async function setParent(nid: string, parentId: string) {
+    await nodesApi.setParent(pid(), nid, parentId)
+    await loadGraph(pid())
+  }
+  async function clearParent(nid: string) {
+    await nodesApi.clearParent(pid(), nid)
+    await loadGraph(pid())
+  }
+
   function clear() {
     subgraph.value = null
     sidebarNodes.value = []
     selectedId.value = null
     filters.value = {}
+    currentPid.value = null
   }
 
   return {
-    subgraph, sidebarNodes, selectedId, filters,
+    subgraph, sidebarNodes, selectedId, filters, currentPid,
     matchedIds, loadGraph, select, setFilter, clearFilters, clear,
+    createNode, deleteNode, createEdge, deleteEdge, setParent, clearParent,
   }
 })
