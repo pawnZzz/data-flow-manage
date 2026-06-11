@@ -47,3 +47,71 @@ export interface PurgeResult {
   deleted_nodes: number
   deleted_schemas: number
 }
+
+export interface GraphEdge {
+  id: string
+  project_id: number
+  source_id: string
+  target_id: string
+  edge_type: string
+  description: string | null
+  is_required: boolean
+  strength: string
+  ext_props: Record<string, unknown>
+  created_at: string
+  created_by: number
+}
+
+export interface GraphSubgraphNode {
+  id: string
+  name: string
+  type: string
+  priority: string | null
+  is_critical: boolean
+  parent_id: string | null
+}
+
+export interface GraphStats {
+  node_count: number
+  edge_count: number
+  has_cycle: boolean
+}
+
+export interface Subgraph {
+  nodes: GraphSubgraphNode[]
+  edges: GraphEdge[]
+  stats: GraphStats
+}
+
+export interface XYPos {
+  x: number
+  y: number
+}
+
+export interface NodeResponse {
+  id: string
+  project_id: number
+  name: string
+  type: string
+  description: string | null
+  owner: string | null
+  department: string | null
+  system: string | null
+  priority: string | null
+  tags: string[]
+  ext_props: Record<string, unknown>
+  is_critical: boolean
+  parent_id: string | null
+  children_count: number
+  upstream_count: number
+  downstream_count: number
+}
+
+export interface NodeFilters {
+  type?: string
+  department?: string
+  system?: string
+  priority?: string
+  tag?: string
+  name?: string
+}
